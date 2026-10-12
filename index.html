@@ -298,7 +298,7 @@
       width: 450px; max-width: 90%; padding: 20px; box-shadow: var(--purple-glow);
     }
 
-    /* WINNER ANNOUNCEMENT MODAL - REVISED HIGH VISIBILITY */
+    /* WINNER ANNOUNCEMENT MODAL */
     .winner-modal-card {
       background: linear-gradient(135deg, #130a24 0%, #06030e 100%);
       border: 3px solid var(--gold); border-radius: 20px;
@@ -654,10 +654,10 @@
         </table>
       </div>
 
-      <!-- SEKSI: TABEL PESERTA & ABSENSI -->
+      <!-- SEKSI: TABEL PESERTA, BULK IMPORT & ABSENSI -->
       <div class="card view-section view-dashboard view-peserta no-obs hidden">
         <div class="card-head">
-          <span>MANAJEMEN PESERTA, ABSENSI & AVATAR LOKAL</span>
+          <span>MANAJEMEN PESERTA, BULK IMPORT (COPAS) & ABSENSI</span>
           <div style="display:flex; gap:10px; align-items:center;">
             <button class="btn btn-green btn-sm" onclick="App.markAllAttendance(true)">✅ ABSENKAN SEMUA</button>
             <input type="text" id="searchPeserta" class="input-field" placeholder="Cari Nama..." style="padding:4px 8px; width:120px;" oninput="App.renderPeserta()">
@@ -683,6 +683,7 @@
           <tbody id="pesertaTbody"></tbody>
         </table>
         
+        <!-- INPUT SATUAN -->
         <div class="input-group" style="flex-wrap: wrap;">
           <input type="text" id="newPesertaName" class="input-field" placeholder="Nama Peserta Baru..." style="min-width: 150px;">
           
@@ -700,6 +701,17 @@
           </select>
           <button class="btn btn-purple" onclick="App.addPeserta()">TAMBAH PESERTA</button>
         </div>
+
+        <!-- BULK IMPORT COPAS KOTAK -->
+        <div style="margin-top: 14px; background: rgba(0,0,0,0.3); border: 1px dashed var(--card-border); padding: 10px; border-radius: 8px;">
+          <label style="font-size: 0.65rem; color: var(--gold); font-weight: 800; display: block; margin-bottom: 4px;">📋 BULK IMPORT (COPAS BANYAK SEKALIGUS - 1 NAMA PER BARIS):</label>
+          <textarea id="bulkPesertaText" class="input-field" rows="3" placeholder="Contoh:&#10;Budi_Gamer&#10;Raka_Sultan&#10;AndiPro" style="width: 100%; resize: vertical;"></textarea>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 6px;">
+            <span style="font-size: 9px; color: var(--text-muted);">*Otomatis terdaftar sebagai Tipe FIXED dan langsung hadir.</span>
+            <button class="btn btn-gold btn-sm" onclick="App.bulkImportPeserta()">⚡ IMPORT MASSAL SEKARANG</button>
+          </div>
+        </div>
+
       </div>
 
       <!-- SEKSI: TABEL LEADERBOARD -->
@@ -872,6 +884,12 @@
       ],
 
       locationSpecificFish: {
+        "PLANETARY OBSERVATORY": [
+          { label: "COSMIC SHARK", pts: "+2", val: 2 },
+          { label: "SHINY/BIG/MUTASI COSMIC SHARK", pts: "+3", val: 3 },
+          { label: "BIG SHINY/MUTASI COSMIC SHARK", pts: "+4", val: 4 },
+          { label: "SHINY BIG MUTASI COSMIC SHARK", pts: "+5", val: 5 }
+        ],
         "ANCIENT JUNGLE": [
           { label: "RAGNAREX", pts: "+10", val: 10 },
           { label: "RAGNAREX MUTASI", pts: "+15", val: 15 },
@@ -926,7 +944,7 @@
       },
 
       saveStorage() {
-        localStorage.setItem('GALATAMA_STATE_V5_FINAL_WIN', JSON.stringify({
+        localStorage.setItem('GALATAMA_STATE_V5_BULK_FINAL', JSON.stringify({
           mode: this.state.mode, currentTheme: this.state.currentTheme,
           timer: { durationMinutes: this.state.timer.durationMinutes, secondsLeft: this.state.timer.secondsLeft },
           survival: this.state.survival, pointRushLocation: this.state.pointRushLocation,
@@ -936,7 +954,7 @@
       },
 
       loadStorage() {
-        const saved = localStorage.getItem('GALATAMA_STATE_V5_FINAL_WIN');
+        const saved = localStorage.getItem('GALATAMA_STATE_V5_BULK_FINAL');
         if (saved) {
           try {
             const parsed = JSON.parse(saved);
@@ -1279,6 +1297,36 @@
         this.saveStorage(); this.renderAll();
       },
 
+      bulkImportPeserta() {
+        const text = document.getElementById('bulkPesertaText').value.trim();
+        if (!text) return alert("Kotak teks masih kosong!");
+        const lines = text.split('\n');
+        let count = 0;
+
+        lines.forEach(line => {
+          const name = line.trim();
+          if (name) {
+            this.state.participants.push({
+              id: 'p_' + Date.now() + '_' + Math.random().toString(36).substring(2,5),
+              name: name,
+              avatar: DEFAULT_AVATAR + encodeURIComponent(name),
+              type: 'FIXED',
+              status: 'ACTIVE',
+              present: true,
+              totalScore: 0,
+              roundCatches: [],
+              historyLog: []
+            });
+            count++;
+          }
+        });
+
+        document.getElementById('bulkPesertaText').value = '';
+        this.saveStorage();
+        this.renderAll();
+        alert(`Berhasil mengimpor ${count} peserta secara massal!`);
+      },
+
       deletePeserta(id, e) {
         if (e) e.stopPropagation();
         if (confirm(`Hapus peserta ini?`)) {
@@ -1351,7 +1399,7 @@
 
       resetAllData() {
         if (confirm("Reset SELURUH data tournament?")) {
-          localStorage.removeItem('GALATAMA_STATE_V5_FINAL_WIN'); location.reload();
+          localStorage.removeItem('GALATAMA_STATE_V5_BULK_FINAL'); location.reload();
         }
       },
 
